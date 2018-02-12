@@ -1,0 +1,112 @@
+---
+title: "hw1_agr"
+author: "Анастасия Костяницына"
+output: html_document
+---
+
+### 1.1
+```{r}
+library(tidyverse)
+df <- read_csv('https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/Stoneberry/hw1_agreement/hw1_1_zilo_class.csv')
+
+df %>% group_by(stimulus_source)%>% summarise(n_observations =  n_distinct(stimulus))
+#df %>% distinct(stimulus_source, w_id) %>% count(stimulus_source)
+
+```
+
+### 1.2
+```{r}
+library(irr)
+
+zilo_classes_short <- df %>% 
+  select(s_id, stimulus, translation_ru, stimulus_source, class) %>% 
+  spread(key = s_id, value = class)
+
+agree(zilo_classes_short[,-c(1:3)])
+```
+
+### 1.3
+```{r}
+
+zilo_classes_2s <- zilo_classes_short[,c(7, 11)]
+kappa2(zilo_classes_2s)
+```
+
+### 1.4
+```{r}
+kappam.fleiss(zilo_classes_short[,-c(1:3)])
+```
+
+### 1.5
+```
+"В зиловском диалекте андийского языка существует два класса для неодушевленных предметов. Чтобы проверить, есть ли вариативность в отнесении к определенному классу слов, были опрошены носители языка. В ходе исследования выявилось, что в 74.2% примеров носители одинаково определили класс у предметов. На основе ответов двух носителей было решено проверить степень их согласия в определенении класса, для этой цели была посчитана Каппа Коэна. Получившееся значение, равное 0.723, говорит о том, что степерь согласия между носителями существенна. Для подтверждения того, что все таки носители солидарны в определении классов слов, был проведен тот же эксперемент, но для всех респондентов исследования. Выяснилось, что между носителями наблюдается практически полное согласие, так как каппа Фляйса равно 0.849."
+```
+
+
+### 2.1
+```{r}
+df2 <- read_csv('https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/Stoneberry/hw1_agreement/hw1_2_verbs.csv')
+
+#people <- df2 %>% group_by(SubjectCode)%>% summarise(n_observations =  n())
+df2 %>% count(SubjectCode) 
+```
+
+### 2.2
+```{r}
+df2 %>% group_by(WordType, Gender)%>% summarise(mean =  mean(GivenScore))
+```
+
+### 2.3
+```{r}
+verb_short <- df2 %>%
+  select(Stimulus, WordType, Prefix, CorpusFrequency, SubjectCode, GivenScore) %>% spread(key=SubjectCode, value = GivenScore)
+
+verb_short <- verb_short[complete.cases(verb_short), ]
+agree(verb_short[,-c(1:4)])
+```
+
+### 2.4
+```{r}
+kappam.fleiss(verb_short[,-c(1:4)])
+```
+
+### 2.5
+```{r}
+icc(verb_short[,-c(1:4)], model = "twoway", type = "agreement")
+```
+
+### 2.6
+```{r}
+min(cor(verb_short[,-c(1:4)], method = "kendall"))
+max(cor(verb_short[,-c(1:4)], method = "kendall"))
+
+
+a2 <- data.frame(cor(verb_short[,-c(1:4)], method = "kendall"))
+a1 <- as.table(cor(verb_short[,-c(1:4)], method = "kendall"))
+
+
+with_out_one <- function(vec){
+  new <- c()
+  for (k in vec){
+    if (k != 1.0000000){
+      new <- c(new, k)
+    }
+  }
+return(new)
+  }
+
+
+names <- unique(df2$SubjectCode)
+foo <- function(a1, names){
+  mins <- c()
+  maxs <- c()
+  l <- 1
+  for (i in 1:(89)){
+    mins <- c(mins, min(a1[l:(l+88)]))
+    maxs <- c(maxs, max(with_out_one(a1[l:(l+88)])))
+    l <- l+89
+  }
+print(data_frame(Subjects = names, min = mins, max = maxs))
+}
+foo(a1, names)
+```
