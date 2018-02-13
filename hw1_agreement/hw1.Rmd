@@ -77,14 +77,6 @@ icc(verb_short[,-c(1:4)], model = "twoway", type = "agreement")
 
 ### 2.6
 ```{r}
-# min(cor(verb_short[,-c(1:4)], method = "kendall"))
-# max(cor(verb_short[,-c(1:4)], method = "kendall"))
-
-
-# a2 <- data.frame(cor(verb_short[,-c(1:4)], method = "kendall"))
-a1 <- as.table(cor(verb_short[,-c(1:4)], method = "kendall"))
-
-
 with_out_one <- function(vec){  # функция, которая делает вектор ответов без 1
   new <- c()
   for (k in vec){
@@ -93,20 +85,8 @@ with_out_one <- function(vec){  # функция, которая делает в
     }
   }
 return(new)
-  }
-
-
-names <- unique(df2$SubjectCode)  # вектор респондентов
-foo <- function(a1, names){  # функция, которая определяет минимумы и максимумы 
-  mins <- c()
-  maxs <- c()
-  l <- 1
-  for (i in 1:(89)){
-    mins <- c(mins, min(a1[l:(l+88)]))
-    maxs <- c(maxs, max(with_out_one(a1[l:(l+88)])))
-    l <- l+89
-  }
-print(data_frame(Subjects = names, min = mins, max = maxs))
 }
-foo(a1, names)
+
+a1 <- as.table(cor(verb_short[,-c(1:4)], method = "kendall"))
+data_frame(param = c('min', 'max'), values = c(min(a1), max(with_out_one(a1))))
 ```
