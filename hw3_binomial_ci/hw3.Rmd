@@ -20,8 +20,11 @@ a <- df %>%
 
 a1 <- a %>% group_by(chapter)%>% summarise(n =  n())
 
-a1 %>% 
-  summarise(g_mean = mean(a1$n/n_words$n))
+sir <- data_frame(chapters = a1$chapter, n = a1$n, n_words = n_words$n) %>%
+  mutate(average = n/n_words)
+
+sir %>% 
+  summarise(g_mean = mean(average))
 
 ```
 ### 1.2
@@ -31,21 +34,23 @@ df %>%
   filter(word == "сэр") ->
   df_bs
 
-df_bs <- bootstrap(a1$average/n_words$average, nboot = 10000, theta = mean)$thetastar
-df_bs <- data_frame(means = df_bs) 
-df_bs %>%
+sir_bs <- bootstrap(sir$average, nboot = 10000, theta = mean)$thetastar
+sir_bs <- data_frame(means = sir_bs) 
+
+sir_bs %>%
   summarise(mean = mean(means),
             q1 = quantile(means, 0.025),
-            q2 = quantile(means, 0.975))->
-  df_bs_stats
-df_bs_stats
+            q2 = quantile(means, 0.975)) %>%
+   mutate(interval = q2 - q1) -> sir_stats
+
+sir_stats
+
 ```
 
 ### 1.3
 ```{r}
-a3 <- data_frame(chapters = a1$chapter, n = a1$n, n_words = n_words$n)
 
-ci <- a3 %>% 
+ci <- sir %>% 
   group_by(chapters) %>% 
   mutate(low_ci = binom.test(x = n, n = n_words, ci.method = "Clopper-Pearson")$conf.int[1],
          up_ci = binom.test(x = n, n = n_words, ci.method = "Clopper-Pearson")$conf.int[2],
@@ -59,15 +64,12 @@ ci[which.max(ci$interval),]
 ### 1.4
 ```{r}
 
-a3 <- a3 %>%
-  mutate(average = n/n_words)
-
-mu <- mean(a3$average)
-var <- var(a3$average)
+mu <- mean(sir$average)
+var <- var(sir$average)
 alpha0 <- ((1 - mu) / var - 1 / mu) * mu ^ 2
 beta0 <- alpha0 * (1 / mu - 1)
 
-a3 %>% 
+sir %>% 
   mutate(alpha_post = n+alpha0,
          beta_post = n_words-n+beta0,
          average_post = alpha_post/(alpha_post+beta_post),
@@ -82,9 +84,6 @@ posterior %>%
 
 posterior[which.max(posterior$interval),]
 
-# Доверительный интервал тут это разница между двумя эвередж?
-# или между лоу и хай
-
 ```
 
 ### 1.5
@@ -97,11 +96,19 @@ ci[which.min(ci$interval),]
 ### 1.6
 ```{r}
 posterior[which.min(posterior$interval),]
-
 ```
 
 
 ### 1.7
-```
-''
+``` {r}
+ci %>% 
+  ggplot(aes(chapters, average, ymin = low_ci, ymax = up_ci))+
+  geom_errorbar()+
+  geom_point()+
+  coord_flip()+
+  theme_bw()+
+  geom_errorbar(aes(posterior$chapters, posterior$average_post, ymin = posterior$cred_int_l, ymax = posterior$cred_int_h, color = 'red'))+
+  geom_point(aes(posterior$chapters, posterior$average_post, color = 'red'))
+
+# Как видно на графике, разница между оценками среднего и доверительных интервалов количества употреблений слова “сэр” во всех главах романа не сильно отличается. Наибольшее различие между средними наблюдается у Главы 6 (0.0008), в то время как для Главы 8 они практически совпадают. Видно, что confidence interval чуть больше, чем credible interval.
 ```
