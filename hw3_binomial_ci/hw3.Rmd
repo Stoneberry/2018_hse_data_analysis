@@ -1,0 +1,107 @@
+---
+title: "hw2_agr"
+author: "Анастасия Костяницына"
+output: html_document
+---
+
+
+### 1.1
+```{r}
+library(bootstrap)
+library(mosaic)
+library(tidyverse)
+
+df <- read_csv('https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/Stoneberry/hw3_binomial_ci/hw3_wodehouse.csv')
+
+n_words <- df %>% group_by(chapter)%>% summarise(n =  n())
+
+a <- df %>% 
+  filter(word == 'сэр')
+
+a1 <- a %>% group_by(chapter)%>% summarise(n =  n())
+
+a1 %>% 
+  summarise(g_mean = mean(a1$n/n_words$n))
+
+```
+### 1.2
+```{r}
+set.seed(42)
+df %>% 
+  filter(word == "сэр") ->
+  df_bs
+
+df_bs <- bootstrap(a1$average/n_words$average, nboot = 10000, theta = mean)$thetastar
+df_bs <- data_frame(means = df_bs) 
+df_bs %>%
+  summarise(mean = mean(means),
+            q1 = quantile(means, 0.025),
+            q2 = quantile(means, 0.975))->
+  df_bs_stats
+df_bs_stats
+```
+
+### 1.3
+```{r}
+a3 <- data_frame(chapters = a1$chapter, n = a1$n, n_words = n_words$n)
+
+ci <- a3 %>% 
+  group_by(chapters) %>% 
+  mutate(low_ci = binom.test(x = n, n = n_words, ci.method = "Clopper-Pearson")$conf.int[1],
+         up_ci = binom.test(x = n, n = n_words, ci.method = "Clopper-Pearson")$conf.int[2],
+         interval = up_ci - low_ci)
+
+ci[which.max(ci$interval),]
+
+```
+
+
+### 1.4
+```{r}
+
+a3 <- a3 %>%
+  mutate(average = n/n_words)
+
+mu <- mean(a3$average)
+var <- var(a3$average)
+alpha0 <- ((1 - mu) / var - 1 / mu) * mu ^ 2
+beta0 <- alpha0 * (1 / mu - 1)
+
+a3 %>% 
+  mutate(alpha_post = n+alpha0,
+         beta_post = n_words-n+beta0,
+         average_post = alpha_post/(alpha_post+beta_post),
+         cred_int_l = qbeta(.025, alpha_post, beta_post),
+         cred_int_h = qbeta(.975, alpha_post, beta_post),
+         interval = cred_int_h -  cred_int_l) ->
+  posterior
+
+posterior %>% 
+  select(chapters, n_words, average, average_post) %>% 
+  arrange(n_words)
+
+posterior[which.max(posterior$interval),]
+
+# Доверительный интервал тут это разница между двумя эвередж?
+# или между лоу и хай
+
+```
+
+### 1.5
+```{r}
+ci[which.min(ci$interval),]
+
+```
+
+
+### 1.6
+```{r}
+posterior[which.min(posterior$interval),]
+
+```
+
+
+### 1.7
+```
+''
+```
