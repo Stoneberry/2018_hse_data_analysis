@@ -1,0 +1,77 @@
+---
+title: "hw5"
+output: html_document
+---
+
+
+### 1.1
+```{r}
+library(bootstrap)
+library(mosaic)
+library(tidyverse)
+
+df <- read_csv('https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/Stoneberry/hw5_CA_MCA/hw5_chairs.csv')
+
+df2 <- df[4:19]
+
+df2[sapply(df2, is.character)] <- lapply(df2[sapply(df2, is.character)], 
+                                       as.factor)
+MCA <- MASS::mca(df2)
+
+df2 <- cbind(df2, MCA$rs)
+variables <- as_data_frame(MCA$cs)
+variables$var_names <- rownames(MCA$cs)
+
+#df %>% filter(df$Function == 'Work')
+
+df2 %>% 
+  ggplot(aes(`1`, `2`))+
+  geom_point(aes(color = df$Category))+
+  stat_ellipse(aes(color = df$Category))+
+  geom_text(data = variables, aes(`1`, `2`, label = var_names))+
+  theme_bw()+
+  scale_x_continuous(limits = c(-0.015, 0.02))
+
+```
+
+
+### 1.2
+```{r}
+'На основе получившихся результатов можно сделать вывод, что Stuhl - это скорее всего офисный стул c возможностью регулирования и поворота. А Sessel - это кресло с откидывающейся спинкой и возможностью превращения в спальное место.'
+```
+
+
+
+### 2.1
+```{r}
+library(ca)
+
+
+df3 <- read_csv('https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/Stoneberry/hw5_CA_MCA/hw5_colreg.csv')
+
+
+rownames(df3) <- row.names(df3)
+
+ca <- ca(df3)
+
+df3_col <- data.frame(ca$colcoord)
+df3_col$rows <- rownames(ca$colcoord)
+
+df3_row <- data.frame(ca$rowcoord)
+df3_row$rows <- rownames(ca$rowcoord)
+
+df3_col %>% 
+  ggplot(aes(Dim1, Dim2, label = rows))+
+  geom_text(color = "blue")+
+  geom_text(data =  df3_row, color = "red")+
+  theme_bw()+
+  labs(x = "Dim1 (42.1%)",
+       y = "Dim2 (32.6%)")
+
+```
+
+
+### 2.2
+```{r}
+'Видимо, Цвет 1 наиболее часто упорбеляется в разговорном корпусе, 5, 6, 9 - в газетном, 2, 11, 8, 3, 7 - в художественном'
+```
